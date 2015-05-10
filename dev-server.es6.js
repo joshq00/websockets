@@ -1,56 +1,28 @@
-// babel dev-server.es6.js | clip && node --harmony
+import express from 'express';
 import webpack from 'webpack';
-import WebpackDevServer from 'webpack-dev-server';
+import webpackDevMiddleware from 'webpack-dev-middleware';
 import config from './webpack.dev.config.es6';
 
-const webpackServer = new WebpackDevServer( webpack( config ), {
-	publicPath: config.output.publicPath,
+var app = express();
+var compiler = webpack( config );
+var options = {
+	publicPath: '/build',
 	noInfo: true,
-	hot: true,
 	historyApiFallback: true
+};
+
+app
+	.use( webpackDevMiddleware( compiler, options ) )
+	.use( require( 'webpack-hot-middleware' )( compiler ) )
+	.use( express.static( '.' ) )
+	;
+
+var server = require( 'http' ).Server( app );
+var io = require( 'socket.io' )( server );
+io.on( 'connection', socket => {
+	console.log( 'connected' );
+	socket.on( 'message', message => console.log( message ) );
+	socket.on( 'message', message => io.emit( 'news', { message: message } ) );
 } );
 
-let io;
-let news;
-webpackServer.listen( config.port, () => {
-	io = webpackServer.io;
-
-	news = io
-		.of( '/news' )
-		.on( 'connection', socket => {
-			news.emit( 'news', {
-				hello: 'world'
-			} );
-
-			socket.on( 'my other event', data => console.log( data ) );
-
-			socket.on( 'message', ( message ) => {
-				console.log( 'message received', message );
-				// fn( [ name, b, 'ack' ] );
-				news.emit( 'news', {
-					message
-				} );
-			} );
-
-			socket.on( 'error', () => console.error( ...arguments ) );
-		} );
-} );
-
-process.stdin.on( 'readable', () => {
-	let input = ( process.stdin.read() || '' ).toString().trim();
-
-	try {
-		input = JSON.parse( input );
-	} catch ( ex ) {
-		console.log( 'not json' );
-	}
-	news.emit( 'news', input );
-	// switch ( input ) {
-	// case 'q':
-	// 	process.stdin.destroy();
-	// 	break;
-	// default:
-	// 	console.log( input );
-	// }
-} );
-
+server.listen( 3000 );

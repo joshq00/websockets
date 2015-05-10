@@ -1,10 +1,7 @@
 import webpack from 'webpack';
 import cfg from './webpack.config.es6';
-import { _extend } from 'util';
 
 let port = process.env.PORT || cfg.port || 3000;
-
-let host = `http://localhost:${port}`;
 
 console.log( 'Mapping entry points -> dev server.' );
 let entry = Object.keys( cfg.entry ).reduce( ( map, key ) => {
@@ -14,35 +11,32 @@ let entry = Object.keys( cfg.entry ).reduce( ( map, key ) => {
 		val = [ val ];
 	}
 	val.unshift(
-		`webpack-dev-server/client?${ host }`,
-		'webpack/hot/only-dev-server'
+		/* webpack-hot-middleware */
+		'webpack-hot-middleware/client',
+		'webpack/hot/dev-server'
 	);
 	map[ key ] = val;
 	return map;
 }, {} );
 
-let output = _extend( {}, cfg.output );
-_extend( output, {
-	publicPath: `${ host }/build`
-	// publicPath: cfg.output.path
-} );
+let { output } = cfg;
 
-let loaders = cfg.module.loaders.slice( 0 );
-loaders.unshift( {
+let loaders = [ {
 	test: /\.jsx?$/,
 	loaders: [
 		'react-hot',
 		'babel'
 	],
 	exclude: /node_modules/
-} );
+}, ...cfg.module.loaders ];
 
-let resolve = cfg.resolve;
+let { resolve } = cfg;
 
-let plugins = cfg.plugins.slice( 0 );
-plugins.push(
+let plugins = [
+	...cfg.plugins,
+	new webpack.optimize.OccurenceOrderPlugin(),
 	new webpack.HotModuleReplacementPlugin()
-);
+];
 
 export default {
 	// target,
@@ -53,6 +47,5 @@ export default {
 	resolve,
 	plugins,
 	port,
-	// devtool: 'source-map'
 	devtool: 'eval'
 };

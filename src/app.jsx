@@ -1,11 +1,8 @@
 import React from 'react';
 import io from 'socket.io-client';
 
-let socket = global.socket = io.connect( window.location.origin + '/news' );
-// socket.on( 'news', function ( data ) {
-// 	log( data );
-// 	socket.emit( 'my other event', { my: 'data' } );
-// } );
+let socket = io();
+window.socket = socket;
 
 export default class App extends React.Component {
 	constructor ( props ) {
@@ -13,12 +10,14 @@ export default class App extends React.Component {
 		this.dataChanged = this.dataChanged.bind( this );
 		this.onSubmit = this.onSubmit.bind( this );
 		this.state = {
+			message: '',
 			data: []
 		};
 	}
 
 	componentDidMount () {
 		socket.on( 'news', this.dataChanged );
+		socket.send( 'connected' );
 	}
 
 	componentWillUnmount () {
@@ -26,6 +25,7 @@ export default class App extends React.Component {
 	}
 
 	dataChanged ( item ) {
+		console.log( item );
 		let { data } = this.state;
 		data.push( item );
 		this.setState( { data } );
@@ -34,18 +34,33 @@ export default class App extends React.Component {
 		e.preventDefault();
 		let inp = React.findDOMNode( this.refs.post );
 		socket.send( inp.value );
+		console.log( inp.value );
+		this.setState( { message: '' } );
 	}
 	render () {
 		return (
 		<div style={{ whiteSpace: 'pre' }}>
 			<form onSubmit={ this.onSubmit }>
-				<input ref='post' />
+				Send message
+				<input
+					onChange={ e => this.setState( { message: e.target.value } ) }
+					ref='post'
+					value={ this.state.message }
+					/>
 			</form>
-			app:<br />
-			{ this.state.data.map( ( d, i ) =>
-				<div key={i}>{ JSON.stringify( d ) }</div>
-			) }
+
+			{ this.state.data.map( ( item, i ) => <Item item={ item } key={ i } /> ) }
 		</div>
+		);
+	}
+}
+
+class Item extends React.Component {
+	render () {
+		let { item } = this.props;
+		let { message } = item;
+		return (
+		<div onClick={ () => socket.send( `${message} clicked` ) }>{ JSON.stringify( item ) }</div>
 		);
 	}
 }

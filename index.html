@@ -6,5 +6,11 @@ div {
 </style>
 <div id='log'></div>
 
-<script src="/socket.io/socket.io.js"></script>
+<script src="node_modules/eventsource-polyfill/dist/eventsource.js"></script>
+<script src="polyfill/es5-shim.js"></script>
+<script src="polyfill/es5-sham.js"></script>
+<script src="polyfill/es6-shim.js"></script>
+<script src="polyfill/es6-sham.js"></script>
+<script src="polyfill/ie8.js"></script>
+
 <script src="build/index.js"></script>
