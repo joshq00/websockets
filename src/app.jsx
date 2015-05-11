@@ -4,6 +4,22 @@ import io from 'socket.io-client';
 let socket = io();
 window.socket = socket;
 
+function getExisting () {
+	let resolve, reject;
+	let promise = new Promise( ( res, rej ) => {
+		resolve = res;
+		reject = rej;
+	} );
+
+	let xhr = new XMLHttpRequest();
+	xhr.open( 'GET', '/news' );
+	xhr.onload = () => resolve( xhr.response );
+	xhr.onerror = reject;
+	xhr.send();
+
+	return promise.then( JSON.parse );
+}
+
 export default class App extends React.Component {
 	constructor ( props ) {
 		super( props );
@@ -13,11 +29,12 @@ export default class App extends React.Component {
 			message: '',
 			data: []
 		};
+		getExisting().then( data => this.setState( { data } ) );
 	}
 
 	componentDidMount () {
 		socket.on( 'news', this.dataChanged );
-		socket.send( 'connected' );
+		socket.emit( 'join' );
 	}
 
 	componentWillUnmount () {
